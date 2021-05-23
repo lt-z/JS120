@@ -6,13 +6,25 @@ const readline = require('readline-sync');
 function rules() {
   return {
     winningScore: 5,
+    validChoices: ['rock', 'paper', 'scissors', 'lizard', 'Spock'],
+    shortenedValidChoices: ['r', 'p', 's', 'l', 'S'],
     winningCombos: {
       rock : ['scissors', 'lizard'],
       paper : ['rock', 'spock'],
       scissors : ['paper', 'lizard'],
       lizard : ['paper', 'spock'],
-      spock : ['rock', 'scissors']
-    }
+      Spock : ['rock', 'scissors']
+    },
+  };
+}
+
+function winLoss() {
+  return {
+    rock: [0, 0],
+    paper: [0, 0],
+    scissors: [0, 0],
+    lizard: [0, 0],
+    Spock: [0, 0]
   };
 }
 
@@ -36,9 +48,14 @@ function createHuman() {
       let choice;
 
       while (true) {
-        console.log('Please choose rock, paper, scissors, lizard, spock');
-        choice = readline.question().toLowerCase();
-        if (Object.keys(rules.winningCombos).includes(choice)) break;
+        console.log('Please choose (r)ock, (p)aper, (s)cissors, (l)izard, (S)pock');
+        choice = readline.question();
+        if (rules.validChoices.includes(choice)) break;
+        if (rules.shortenedValidChoices.includes(choice)) {
+          choice = rules.
+            validChoices[rules.shortenedValidChoices.indexOf(choice)];
+          break;
+        }
         console.log('Sorry, invalid choice');
       }
       this.currentMove = choice;
@@ -47,18 +64,32 @@ function createHuman() {
   return Object.assign(playerObject, humanObject);
 }
 
+let weightObject = {
+  winThreshold: 0.60,
+  lossThreshold: 0.40,
+  changeWeight: 25,
+
+  updateWeight(roundWinner, winLoss) {
+    if (roundWinner !== 'tie') {
+      let moveIndex = Object.keys(winLoss).indexOf(this.currentMove);
+      let sum = winLoss[this.currentMove]
+        .reduce((acc, num) => acc + num);
+      this.winRate[moveIndex] = winLoss[this.currentMove][0] / sum;
+
+      if (this.winRate[moveIndex] > this.winThreshold && roundWinner === 'computer') {
+        this.weights[moveIndex] += this.changeWeight;
+      } else if (this.winRate[moveIndex] <= this.lossThreshold && roundWinner === 'human') {
+        this.weights[moveIndex] -= this.changeWeight;
+      }
+    }
+  }
+};
+
 function createComputer() {
-  const winThreshold = 0.60;
-  const lossThreshold = 0.40;
-  const changeWeight = 25;
+
   let playerObject = createPlayer();
 
   let computerObject = {
-    winLoss: {rock: [0, 0],
-      paper: [0, 0],
-      scissors: [0, 0],
-      lizard: [0, 0],
-      spock: [0, 0]},
     winRate: [0.5, 0.5, 0.5, 0.5, 0.5],
     weights: [100, 100, 100, 100, 100],
 
@@ -75,24 +106,9 @@ function createComputer() {
         }
       }
     },
-
-    updateWeight(roundWinner) {
-      if (roundWinner !== 'tie') {
-        let moveIndex = Object.keys(this.winLoss).indexOf(this.currentMove);
-        let sum = this.winLoss[this.currentMove]
-          .reduce((acc, num) => acc + num);
-        this.winRate[moveIndex] = this.winLoss[this.currentMove][0] / sum;
-
-        if (this.winRate[moveIndex] > winThreshold && roundWinner === 'computer') {
-          this.weights[moveIndex] += changeWeight;
-        } else if (this.winRate[moveIndex] <= lossThreshold && roundWinner === 'human') {
-          this.weights[moveIndex] -= changeWeight;
-        }
-      }
-    }
   };
 
-  return Object.assign(playerObject, computerObject);
+  return Object.assign(playerObject, computerObject, weightObject);
 }
 
 const RPSGame = {
@@ -100,19 +116,19 @@ const RPSGame = {
   computer: createComputer(),
   rules: rules(),
   roundWinner: null,
-
+  winLoss: winLoss(),
 
   resetGame() {
     this.human.score = 0;
     this.human.previousMoves = [];
     this.computer.score = 0;
     this.computer.previousMoves = [];
-    this.computer.winLoss = {
+    this.winLoss = {
       rock: [0, 0],
       paper: [0, 0],
       scissors: [0, 0],
       lizard: [0, 0],
-      spock: [0, 0]};
+      Spock: [0, 0]};
     this.computer.winRate = [0.5, 0.5, 0.5, 0.5, 0.5];
     this.computer.weights = [100, 100, 100, 100, 100];
   },
@@ -159,11 +175,11 @@ const RPSGame = {
 
     if (this.rules.winningCombos[humanMove].includes(computerMove)) {
       this.human.score += 1;
-      this.computer.winLoss[this.computer.currentMove][1] += 1;
+      this.winLoss[this.computer.currentMove][1] += 1;
       this.roundWinner = 'human';
     } else if (this.rules.winningCombos[computerMove].includes(humanMove)) {
       this.computer.score += 1;
-      this.computer.winLoss[this.computer.currentMove][0] += 1;
+      this.winLoss[this.computer.currentMove][0] += 1;
       this.roundWinner = 'computer';
     } else {
       this.roundWinner = 'tie';
@@ -190,6 +206,13 @@ const RPSGame = {
     console.log('=======================\n');
   },
 
+  displayRules() {
+    for (let hand in this.rules.winningCombos) {
+      console.log(`${hand} beats: ${this.rules.winningCombos[hand].join(' and ')}.`);
+    }
+    console.log();
+  },
+
   playAgain() {
     console.log('\nWould you like to play again? (y/n)');
     let answer = readline.question().toLowerCase();
@@ -200,21 +223,33 @@ const RPSGame = {
     return answer === 'y';
   },
 
-  play() {
+  anyKeyToContinue() {
+    readline.question('Press any key to continue');
+    console.clear();
+  },
+
+  playRound() {
+    let totalScore = 0;
+
+    while (totalScore < this.rules.winningScore) {
+      this.human.choose(this.rules);
+      this.computer.choose(this.rules);
+      this.updateMoves();
+      this.determineRoundWinner();
+      this.displayRoundWinner();
+      this.anyKeyToContinue();
+      this.computer.updateWeight(this.roundWinner, this.winLoss);
+      totalScore = Math.max(this.human.score, this.computer.score);
+    }
+  },
+
+  playGame() {
     while (true) {
       console.clear();
-      let totalScore = 0;
 
       this.displayWelcomeMessage();
-      while (totalScore < this.rules.winningScore) {
-        this.human.choose(this.rules);
-        this.computer.choose(this.rules);
-        this.updateMoves();
-        this.determineRoundWinner();
-        this.displayRoundWinner();
-        this.computer.updateWeight(this.roundWinner);
-        totalScore = Math.max(this.human.score, this.computer.score);
-      }
+      this.displayRules();
+      this.playRound();
       this.displayGameWinner();
 
       if (this.previousMovePrompt()) {
@@ -228,4 +263,4 @@ const RPSGame = {
   },
 };
 
-RPSGame.play();
+RPSGame.playGame();
