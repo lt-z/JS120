@@ -45,7 +45,7 @@ class Board {
     console.log("     |     |");
     console.log("-----+-----+-----");
     console.log("     |     |");
-    console.log(`  ${this.squares[7].getMarker()}  |  ${this.squares[8].getMarker()}  | ${this.squares[9].getMarker()}`);
+    console.log(`  ${this.squares[7].getMarker()}  |  ${this.squares[8].getMarker()}  |  ${this.squares[9].getMarker()}`);
     console.log("     |     |");
     console.log("");
   }
@@ -71,6 +71,13 @@ class Board {
     console.log('');
     console.log('');
     this.display();
+  }
+
+  reset() {
+    this.squares = {};
+    for (let counter = 1; counter <= 9; counter += 1) {
+      this.squares[String(counter)] = new Square();
+    }
   }
 }
 
@@ -114,10 +121,10 @@ class TTTGame {
     [ "3", "5", "7" ],            // diagonal: bottom-left to top-right
   ];
 
-  play() {
-    this.displayWelcomeMessage();
-
+  playOnce() {
+    this.board.reset();
     this.board.display();
+
     while (true) {
       this.humanMoves();
       if (this.gameOver()) break;
@@ -130,6 +137,16 @@ class TTTGame {
 
     this.board.displayWithClear();
     this.displayResults();
+  }
+
+  play() {
+    this.displayWelcomeMessage();
+
+    while (true) {
+      this.playOnce();
+      if (!this.playAgain()) break;
+    }
+
     this.displayGoodbyeMessage();
   }
 
@@ -205,6 +222,26 @@ class TTTGame {
       return `${array[0]} ${delimiter2} ${array[1]}`;
     }
     return `${array.slice(0, -1).join(delimiter)}${delimiter}${delimiter2} ${array[array.length - 1]}`;
+  }
+
+  playAgain() {
+    let choice;
+
+    while (true) {
+      let validChoices = ['y', 'n'];
+      const prompt = `Would you like to play again? (y/n): `;
+      choice = readline.question(prompt)[0];
+
+      if (validChoices.includes(choice)) break;
+
+      console.log('Sorry that is not a valid choice.');
+      console.log();
+    }
+    console.clear();
+    console.log();
+    console.log();
+
+    return choice === 'y';
   }
 }
 
