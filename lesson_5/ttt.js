@@ -59,9 +59,20 @@ class Board {
     return keys.filter(key => this.squares[key].isUnused());
   }
 
+  isUnusedSquare(key) {
+    return this.squares[key].isUnused();
+  }
+
   countMarkersFor(player, keys) {
     let markers = keys.filter(key => {
       return this.squares[key].getMarker() === player.getMarker();
+    });
+    return markers.length;
+  }
+
+  countEmptyMarkers(keys) {
+    let markers = keys.filter(key => {
+      return this.squares[key].getMarker() === Square.UNUSED_SQUARE;
     });
     return markers.length;
   }
@@ -132,7 +143,7 @@ class TTTGame {
       this.computerMoves();
       if (this.gameOver()) break;
 
-      this.board.displayWithClear();
+      this.board.display();
     }
 
     this.board.displayWithClear();
@@ -192,13 +203,28 @@ class TTTGame {
     this.board.markSquareAt(choice, this.human.getMarker());
   }
 
+  findAtRiskSquare(player) {
+    for (let line = 0; line < TTTGame.POSSIBLE_WINNING_ROWS.length; line += 1) {
+      let currentLine = TTTGame.POSSIBLE_WINNING_ROWS[line];
+
+      if (this.board.countMarkersFor(player, currentLine) === 2 &&
+       this.board.countEmptyMarkers(currentLine) === 1) {
+        let index = currentLine.findIndex(sq => this.board.isUnusedSquare(sq));
+        return currentLine[index];
+      }
+    }
+    return false;
+  }
+
   computerMoves() {
     let validChoices = this.board.unusedSquares();
-    let choice;
+    let randomChoice = Math.floor(Math.random() * validChoices.length)
+      .toString();
 
-    do {
-      choice = Math.floor((9 * Math.random()) + 1).toString();
-    } while (!validChoices.includes(choice));
+    let choice = this.findAtRiskSquare(this.computer) ||
+                  this.findAtRiskSquare(this.human) ||
+                  validChoices[randomChoice];
+
     this.board.markSquareAt(choice, this.computer.getMarker());
   }
 
@@ -221,7 +247,7 @@ class TTTGame {
     } else if (array.length < 3) {
       return `${array[0]} ${delimiter2} ${array[1]}`;
     }
-    return `${array.slice(0, -1).join(delimiter)}${delimiter}${delimiter2} ${array[array.length - 1]}`;
+    return `${array.join(delimiter).slice(0, -1)}${delimiter2} ${array.slice(-1)}`;
   }
 
   playAgain() {
