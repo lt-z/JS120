@@ -102,12 +102,12 @@ class Player {
     return this.marker;
   }
 
-  updateScore() {
-    this.score += 1;
-  }
-
   getScore() {
     return this.score;
+  }
+
+  updateScore() {
+    this.score += 1;
   }
 }
 
@@ -124,12 +124,6 @@ class Computer extends Player {
 }
 
 class TTTGame {
-  constructor() {
-    this.board = new Board();
-    this.human = new Human();
-    this.computer = new Computer();
-  }
-
   static WINS_REQUIRED = 3;
   static POSSIBLE_WINNING_ROWS = [
     [ "1", "2", "3" ],            // top row of board
@@ -141,6 +135,78 @@ class TTTGame {
     [ "1", "5", "9" ],            // diagonal: top-left to bottom-right
     [ "3", "5", "7" ],            // diagonal: bottom-left to top-right
   ];
+
+  constructor() {
+    this.board = new Board();
+    this.human = new Human();
+    this.computer = new Computer();
+    this.firstPlayer = this.human;
+  }
+
+  playMatch() {
+    this.board.reset();
+    this.displayScore();
+    this.board.display();
+
+    let currentPlayer = this.firstPlayer;
+    while (true) {
+      this.playerMoves(currentPlayer);
+      if (this.gameOver()) break;
+
+      this.displayScore();
+      this.board.display();
+      currentPlayer = this.togglePlayer(currentPlayer);
+    }
+    this.updateMatchScore();
+
+    this.board.displayWithClear();
+    this.displayResults();
+  }
+
+  play() {
+    this.displayWelcomeMessage();
+
+    while (true) {
+      this.playMatch();
+      if (this.matchOver()) break;
+      if (!this.playAgain()) break;
+      this.firstPlayer = this.togglePlayer(this.firstPlayer);
+    }
+
+    this.determineGameWinner();
+    this.displayGoodbyeMessage();
+  }
+
+  playAgain() {
+    let choice;
+
+    while (true) {
+      let validChoices = ['y', 'n'];
+      const prompt = `Would you like to play again? (y/n): `;
+      choice = readline.question(prompt)[0];
+
+      if (validChoices.includes(choice)) break;
+
+      console.log('Sorry that is not a valid choice.');
+      console.log('');
+    }
+    console.clear();
+    console.log('');
+    console.log('');
+
+    return choice === 'y';
+  }
+
+  displayWelcomeMessage() {
+    console.clear();
+    console.log('Welcome to Tic Tac Toe!');
+    console.log('');
+    console.log(`First player to win ${TTTGame.WINS_REQUIRED} matches is the winner!`);
+  }
+
+  displayGoodbyeMessage() {
+    console.log('Thanks for playing to Tic Tac Toe! Goodbye!');
+  }
 
   updateMatchScore() {
     if (this.isWinner(this.human)) {
@@ -172,67 +238,6 @@ class TTTGame {
     return this.isMatchWinner(this.human) || this.isMatchWinner(this.computer);
   }
 
-  playMatch() {
-    this.board.reset();
-    this.displayScore();
-    this.board.display();
-
-    while (true) {
-      this.humanMoves();
-      if (this.gameOver()) break;
-
-      this.computerMoves();
-      if (this.gameOver()) break;
-
-      this.displayScore();
-      this.board.display();
-    }
-    this.updateMatchScore();
-
-    this.board.displayWithClear();
-    this.displayResults();
-  }
-
-  play() {
-    this.displayWelcomeMessage();
-
-    while (true) {
-      this.playMatch();
-      if (this.matchOver()) break;
-      if (!this.playAgain()) break;
-    }
-
-    this.determineGameWinner();
-    this.displayGoodbyeMessage();
-  }
-
-  displayWelcomeMessage() {
-    console.clear();
-    console.log('Welcome to Tic Tac Toe!');
-    console.log('');
-    console.log(`First player to win ${TTTGame.WINS_REQUIRED} matches is the winner!`);
-  }
-
-  displayGoodbyeMessage() {
-    console.log('Thanks for playing to Tic Tac Toe! Goodbye!');
-  }
-
-  displayResults() {
-    if (this.isWinner(this.human)) {
-      console.log('You won! Congratulations!');
-    } else if (this.isWinner(this.computer)) {
-      console.log('I won! I won! Take that, human!');
-    } else {
-      console.log('A tie game. How boring.');
-    }
-  }
-
-  isWinner(player) {
-    return TTTGame.POSSIBLE_WINNING_ROWS.some(row => {
-      return this.board.countMarkersFor(player, row) === 3;
-    });
-  }
-
   humanMoves() {
     let choice;
 
@@ -244,7 +249,7 @@ class TTTGame {
       if (validChoices.includes(choice)) break;
 
       console.log('Sorry that is not a valid choice.');
-      console.log();
+      console.log('');
     }
     this.board.markSquareAt(choice, this.human.getMarker());
   }
@@ -279,8 +284,20 @@ class TTTGame {
     this.board.markSquareAt(choice, this.computer.getMarker());
   }
 
-  gameOver() {
-    return this.boardisFull() || this.someoneWon();
+  playerMoves(player) {
+    if (this.human === player) {
+      this.humanMoves();
+    } else {
+      this.computerMoves();
+    }
+  }
+
+  togglePlayer(player) {
+    if (this.human === player) {
+      return this.computer;
+    } else {
+      return this.human;
+    }
   }
 
   boardisFull() {
@@ -288,8 +305,28 @@ class TTTGame {
     return unusedSquares.length === 0;
   }
 
+  gameOver() {
+    return this.boardisFull() || this.someoneWon();
+  }
+
+  isWinner(player) {
+    return TTTGame.POSSIBLE_WINNING_ROWS.some(row => {
+      return this.board.countMarkersFor(player, row) === 3;
+    });
+  }
+
   someoneWon() {
     return this.isWinner(this.human) || this.isWinner(this.computer);
+  }
+
+  displayResults() {
+    if (this.isWinner(this.human)) {
+      console.log('You won! Congratulations!');
+    } else if (this.isWinner(this.computer)) {
+      console.log('I won! I won! Take that, human!');
+    } else {
+      console.log('A tie game. How boring.');
+    }
   }
 
   joinOr(array, delimiter = ', ', delimiter2 = 'or') {
@@ -299,26 +336,6 @@ class TTTGame {
       return `${array[0]} ${delimiter2} ${array[1]}`;
     }
     return `${array.join(delimiter).slice(0, -1)}${delimiter2} ${array.slice(-1)}`;
-  }
-
-  playAgain() {
-    let choice;
-
-    while (true) {
-      let validChoices = ['y', 'n'];
-      const prompt = `Would you like to play again? (y/n): `;
-      choice = readline.question(prompt)[0];
-
-      if (validChoices.includes(choice)) break;
-
-      console.log('Sorry that is not a valid choice.');
-      console.log();
-    }
-    console.clear();
-    console.log();
-    console.log();
-
-    return choice === 'y';
   }
 }
 
