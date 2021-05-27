@@ -213,7 +213,11 @@ class TTTGame {
         return currentLine[index];
       }
     }
-    return false;
+    return null;
+  }
+
+  pickMiddleSquare() {
+    return (this.board.isUnusedSquare('5')) ? '5' : null;
   }
 
   computerMoves() {
@@ -223,6 +227,7 @@ class TTTGame {
 
     let choice = this.findAtRiskSquare(this.computer) ||
                   this.findAtRiskSquare(this.human) ||
+                  this.pickMiddleSquare() ||
                   validChoices[randomChoice];
 
     this.board.markSquareAt(choice, this.computer.getMarker());
