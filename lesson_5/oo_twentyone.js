@@ -353,7 +353,7 @@ class TwentyOneGame {
       console.log('');
       let validChoices = ['y', 'n'];
       const prompt = `Would you like to play again? (y/n): `;
-      choice = readline.question(prompt);
+      choice = readline.question(prompt).toLowerCase();
 
       if (validChoices.includes(choice)) break;
 
