@@ -75,9 +75,14 @@ class Deck {
   }
 }
 
-class Participant {
+class Player {
+  static POOR_THRESHOLD = 0;
+  static RICH_THRESHOLD = 10;
+  static INITIAL_MONEY = 5;
+
   constructor() {
     this.hand = [];
+    this.money = Player.INITIAL_MONEY;
   }
 
   deal(deck) {
@@ -112,17 +117,6 @@ class Participant {
   reset() {
     this.hand = [];
   }
-}
-
-class Player extends Participant {
-  static POOR_THRESHOLD = 0;
-  static RICH_THRESHOLD = 10;
-  static INITIAL_MONEY = 5;
-
-  constructor() {
-    super();
-    this.money = Player.INITIAL_MONEY;
-  }
 
   stay() {
     let answer;
@@ -156,20 +150,13 @@ class Player extends Participant {
   }
 }
 
-class Dealer extends Participant {
+class TwentyOneGame {
+  static WIN_VALUE_LIMIT = 21;
   static DEALER_VALUE_LIMIT = 17;
 
   constructor() {
-    super();
-  }
-}
-
-class TwentyOneGame {
-  static WIN_VALUE_LIMIT = 21;
-
-  constructor() {
     this.player = new Player();
-    this.dealer = new Dealer();
+    this.dealer = new Player();
     this.deck = new Deck();
   }
 
@@ -242,7 +229,7 @@ class TwentyOneGame {
     while (true) {
       this.dealerContinue();
       console.clear();
-      if (this.calculateValue(this.dealer) < Dealer.DEALER_VALUE_LIMIT) {
+      if (this.calculateValue(this.dealer) < TwentyOneGame.DEALER_VALUE_LIMIT) {
         console.log('>> Dealer hits <<');
         this.dealer.hit(this.deck.getDeck());
         this.displayCards();
