@@ -98,14 +98,14 @@ class Participant {
   }
 
   displayHand(hidden = false) {
-    let hand = hidden ? this.displaySuit(this.hideHand()) : this.displaySuit();
+    let hand = hidden ? this.displaySuit(this.hideCard()) : this.displaySuit();
 
     hand.forEach(card => {
       console.log(`   ${card}`);
     });
   }
 
-  hideHand() {
+  hideCard() {
     return [this.hand[0]];
   }
 
