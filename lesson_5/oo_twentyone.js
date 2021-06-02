@@ -85,17 +85,6 @@ class Player {
     this.money = Player.INITIAL_MONEY;
   }
 
-  deal(deck) {
-    for (let card = 0; card < 2; card += 1) {
-      this.hand.push(deck.splice(
-        Math.floor(Math.random() * deck.length), 1)[0]);
-    }
-  }
-
-  hit(deck) {
-    this.hand.push(deck.splice(Math.floor(Math.random() * deck.length), 1)[0]);
-  }
-
   displaySuit(hand = this.hand) {
     return hand.map(card => {
       return card.toSuit();
@@ -188,8 +177,22 @@ class TwentyOneGame {
   }
 
   dealCards() {
-    this.player.deal(this.deck.getDeck());
-    this.dealer.deal(this.deck.getDeck());
+    this.player.hand = this.deal();
+    this.dealer.hand = this.deal();
+  }
+
+  deal() {
+    let hand = [];
+    for (let card = 0; card < 2; card += 1) {
+      hand.push(this.deck.getDeck()
+        .splice(Math.floor(Math.random() * this.deck.length), 1)[0]);
+    }
+    return hand;
+  }
+
+  hit() {
+    return this.deck.getDeck()
+      .splice(Math.floor(Math.random() * this.deck.length), 1)[0];
   }
 
   updateMoney() {
@@ -218,7 +221,7 @@ class TwentyOneGame {
   playerTurn() {
     while (true) {
       if (this.player.stay()) break;
-      this.player.hit(this.deck.getDeck());
+      this.player.hand.push(this.hit());
       console.clear();
       this.displayCards(true);
       if (this.isBusted(this.player)) break;
@@ -231,7 +234,7 @@ class TwentyOneGame {
       console.clear();
       if (this.calculateValue(this.dealer) < TwentyOneGame.DEALER_VALUE_LIMIT) {
         console.log('>> Dealer hits <<');
-        this.dealer.hit(this.deck.getDeck());
+        this.dealer.hand.push(this.hit());
         this.displayCards();
         if (this.isBusted(this.dealer)) break;
       } else {
