@@ -190,9 +190,14 @@ class TwentyOneGame {
     return hand;
   }
 
-  hit() {
-    return this.deck.getDeck()
-      .splice(Math.floor(Math.random() * this.deck.length), 1)[0];
+  playerHit() {
+    this.player.hand.push(this.deck.getDeck()
+      .splice(Math.floor(Math.random() * this.deck.length), 1)[0]);
+  }
+
+  dealerHit() {
+    this.dealer.hand.push(this.deck.getDeck()
+      .splice(Math.floor(Math.random() * this.deck.length), 1)[0]);
   }
 
   updateMoney() {
@@ -221,7 +226,7 @@ class TwentyOneGame {
   playerTurn() {
     while (true) {
       if (this.player.stay()) break;
-      this.player.hand.push(this.hit());
+      this.playerHit();
       console.clear();
       this.displayCards(true);
       if (this.isBusted(this.player)) break;
@@ -234,7 +239,7 @@ class TwentyOneGame {
       console.clear();
       if (this.calculateValue(this.dealer) < TwentyOneGame.DEALER_VALUE_LIMIT) {
         console.log('>> Dealer hits <<');
-        this.dealer.hand.push(this.hit());
+        this.dealerHit();
         this.displayCards();
         if (this.isBusted(this.dealer)) break;
       } else {
